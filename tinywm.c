@@ -27,6 +27,11 @@ int other_wm_handler(Display *dpy, XErrorEvent *e)
 	return 0;
 }
 
+void raise_win(Window w)  {
+	XRaiseWindow(dpy, w);
+	XSetInputFocus(dpy, w, RevertToParent, CurrentTime);
+}
+
 
 void add_corner(Window win) {
 	XSetWindowAttributes attrs;
@@ -160,8 +165,8 @@ int main(void)
 				break;
 			case ButtonPress:
 				if (!ev.xbutton.subwindow) continue;
-				XRaiseWindow(dpy, ev.xbutton.subwindow);
-				XSetInputFocus(dpy, ev.xbutton.subwindow, RevertToParent, CurrentTime);
+				raise_win(ev.xbutton.subwindow);
+
 				start = ev.xbutton;
 				XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
 				x = ev.xbutton.x - attr.x;
@@ -209,7 +214,8 @@ int main(void)
 			case UnmapNotify:
 				break; // TODO ?
 			case MapNotify:
-				break; // TODO ?
+				raise_win(ev.xmap.window);
+				break;
 			case MapRequest:
 				on_map_request(&ev.xmaprequest);
 				break;
