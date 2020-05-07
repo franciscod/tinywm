@@ -43,7 +43,7 @@ void add_corner(Window win) {
 			vinfo.depth, InputOutput,
 			vinfo.visual,
 			CWOverrideRedirect | CWColormap | CWBackPixel | CWBorderPixel, &attrs
-	);
+			);
 
 
 	// ignore input
@@ -55,28 +55,50 @@ void add_corner(Window win) {
 
 	XMapWindow(dpy, overlay);
 
+	const int sz = 20;
+
+	Pixmap shape = XCreatePixmap(dpy, overlay, sz, sz, 1);
+
 	cairo_surface_t* surf = cairo_xlib_surface_create(dpy, overlay,
 			vinfo.visual,
-			20, 20);
+			sz, sz);
+	cairo_surface_t *surfs = cairo_xlib_surface_create_for_bitmap(dpy, shape,
+			DefaultScreenOfDisplay(dpy),
+			sz, sz);
 	cairo_t* cr = cairo_create(surf);
+	cairo_t *crs = cairo_create(surfs);
+
 	latest_cr = cr;
 
-	cairo_set_source_rgba(cr, 1.0, 0.0, 1.0, 0.8);
-	cairo_move_to(cr, 0, 0);
-	cairo_rel_line_to(cr, 20, 0);
-	cairo_rel_line_to(cr, -20, 20);
-	cairo_fill(cr);
+	cairo_set_operator(crs, CAIRO_OPERATOR_CLEAR);
+	cairo_rectangle(crs, 0, 0, sz, sz);
+	cairo_fill(crs);
 
-	// this is supposed to cut out the transparent part
+	cairo_set_source_rgba(cr, 1.0, 0.0, 1.0, 1.0);
+	cairo_set_operator(crs, CAIRO_OPERATOR_OVER);
+
+	cairo_move_to(cr, 0, 0);
+	cairo_move_to(crs, 0, 0);
+
+	cairo_rel_line_to(cr, sz, 0);
+	cairo_rel_line_to(crs, sz, 0);
+	cairo_rel_line_to(cr, -sz, sz);
+	cairo_rel_line_to(crs, -sz, sz);
+
+	cairo_fill(cr);
+	cairo_fill(crs);
+
 	XShapeCombineMask(dpy, overlay, ShapeBounding, 0, 0,
-			cairo_xlib_surface_get_drawable(surf), ShapeSet);
+			cairo_xlib_surface_get_drawable(surfs), ShapeSet);
 
 	XFlush(dpy);
 
 	// TODO: take care of this eventually?
 
 	// cairo_destroy(cr);
+	// cairo_destroy(crs);
 	// cairo_surface_destroy(surf);
+	// cairo_surface_destroy(surfs);
 	// XUnmapWindow(d, overlay);
 }
 
@@ -134,6 +156,8 @@ int main(void)
 	{
 		XEvent ev;
 		XNextEvent(dpy, &ev);
+		int x;
+		int y;
 		switch (ev.type) {
 			case KeyPress:
 				if (!ev.xkey.subwindow) continue;
@@ -143,12 +167,12 @@ int main(void)
 				if (!ev.xbutton.subwindow) continue;
 				start = ev.xbutton;
 				XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
-				int x = ev.xbutton.x - attr.x;
-				int y = ev.xbutton.y - attr.y;
+				x = ev.xbutton.x - attr.x;
+				y = ev.xbutton.y - attr.y;
 				if (x+y < 20) {
 					printf("docking widgets should appear\n");
 					cairo_t *cr = latest_cr;
-					cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 0.5);
+					cairo_set_source_rgba(cr, 0.0, 1.0, 1.0, 1.0);
 					cairo_move_to(cr, 0, 0);
 					cairo_rel_line_to(cr, 20, 0);
 					cairo_rel_line_to(cr, -20, 20);
@@ -156,6 +180,18 @@ int main(void)
 				}
 				break;
 			case ButtonRelease:
+				XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
+				x = ev.xbutton.x - attr.x;
+				y = ev.xbutton.y - attr.y;
+				if (x+y < 20) {
+					printf("docking widgets should be gone\n");
+					cairo_t *cr = latest_cr;
+					cairo_set_source_rgba(cr, 1.0, 0.0, 1.0, 1.0);
+					cairo_move_to(cr, 0, 0);
+					cairo_rel_line_to(cr, 20, 0);
+					cairo_rel_line_to(cr, -20, 20);
+					cairo_fill(cr);
+				}
 				start.subwindow = None;
 				break;
 			case MotionNotify:
