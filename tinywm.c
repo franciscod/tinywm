@@ -141,10 +141,6 @@ int main(void)
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None);
 
-	XGrabButton(dpy, 1, 0, root, True,
-			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
-			GrabModeAsync, GrabModeAsync, None, None);
-
 	XGrabButton(dpy, 3, MOD, root, True,
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None);
