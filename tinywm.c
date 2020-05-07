@@ -20,6 +20,9 @@ XVisualInfo vinfo;
 
 cairo_t *latest_cr;
 
+Atom WM_PROTOCOLS;
+Atom WM_DELETE_WINDOW;
+
 Bool other_wm = False;
 int other_wm_handler(Display *dpy, XErrorEvent *e)
 {
@@ -30,6 +33,19 @@ int other_wm_handler(Display *dpy, XErrorEvent *e)
 void raise_win(Window w)  {
 	XRaiseWindow(dpy, w);
 	XSetInputFocus(dpy, w, RevertToParent, CurrentTime);
+}
+
+void delete_win(Window w) {
+	XEvent ev;
+	ev.xclient.type = ClientMessage;
+	ev.xclient.message_type = WM_PROTOCOLS;
+	ev.xclient.display = dpy;
+	ev.xclient.window = w;
+	ev.xclient.format = 32; // ???
+	ev.xclient.data.l[0] = WM_DELETE_WINDOW;
+	ev.xclient.data.l[1] = CurrentTime;
+
+	XSendEvent(dpy, w, False, 0, &ev);
 }
 
 
@@ -130,6 +146,10 @@ void on_configure_request(XConfigureRequestEvent *e) {
 int main(void)
 {
 	if (!(dpy = XOpenDisplay(0x0))) return 1;
+
+	WM_PROTOCOLS = XInternAtom(dpy, "WM_PROTOCOLS", False);
+	WM_DELETE_WINDOW = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
 	Window root = DefaultRootWindow(dpy);
 
 	// become a wm
@@ -150,6 +170,10 @@ int main(void)
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None);
 
+	XGrabKey(dpy, XKeysymToKeycode(dpy, XK_q), MOD | ShiftMask,
+			root, True, GrabModeAsync,
+			GrabModeAsync);
+
 	XWindowAttributes attr;
 	XButtonEvent start;
 	start.subwindow = None;
@@ -158,10 +182,21 @@ int main(void)
 	{
 		XEvent ev;
 		XNextEvent(dpy, &ev);
+		KeySym keysym;
 		int x;
 		int y;
+
 		switch (ev.type) {
 			case KeyPress:
+				keysym = XKeycodeToKeysym(dpy, ev.xkey.keycode, 0);
+
+				if (ev.xkey.state == (MOD | ShiftMask)) {
+					if (keysym == XK_q) {
+						delete_win(ev.xkey.subwindow);
+						break;
+					}
+				}
+
 				break;
 			case ButtonPress:
 				if (!ev.xbutton.subwindow) continue;
