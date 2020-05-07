@@ -133,9 +133,9 @@ int main(void)
 	XSync(dpy, False);
 	if (other_wm) return 2;
 
-    if (!XMatchVisualInfo(dpy, DefaultScreen(dpy), 32, TrueColor, &vinfo)) {
+	if (!XMatchVisualInfo(dpy, DefaultScreen(dpy), 32, TrueColor, &vinfo)) {
 		return 3;
-    }
+	}
 
 
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MOD,
@@ -205,14 +205,19 @@ int main(void)
 						MAX(1, attr.width  + (start.button==3 ? xdiff : 0)),
 						MAX(1, attr.height + (start.button==3 ? ydiff : 0)));
 				break;
-			case CreateNotify: break; // TODO ?
-			case DestroyNotify: break; // TODO ?
-			case UnmapNotify: break; // TODO ?
-			case MapNotify: break; // TODO ?
+			case CreateNotify:
+				break; // TODO ?
+			case DestroyNotify:
+				break; // TODO ?
+			case UnmapNotify:
+				break; // TODO ?
+			case MapNotify:
+				break; // TODO ?
 			case MapRequest:
 				on_map_request(&ev.xmaprequest);
 				break;
-			case ConfigureNotify: break; // TODO ?
+			case ConfigureNotify:
+				break; // TODO ?
 			case ConfigureRequest:
 				on_configure_request(&ev.xconfigurerequest);
 				break;
