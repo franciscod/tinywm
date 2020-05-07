@@ -14,6 +14,7 @@
 #define MOD Mod4Mask
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 Display *dpy;
 XVisualInfo vinfo;
@@ -177,6 +178,8 @@ int main(void)
 	XWindowAttributes attr;
 	XButtonEvent start;
 	start.subwindow = None;
+	int dirx = 0;
+	int diry = 0;
 
 	for(;;)
 	{
@@ -200,12 +203,32 @@ int main(void)
 				break;
 			case ButtonPress:
 				if (!ev.xbutton.subwindow) continue;
+
 				raise_win(ev.xbutton.subwindow);
 
 				start = ev.xbutton;
 				XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
 				x = ev.xbutton.x - attr.x;
 				y = ev.xbutton.y - attr.y;
+
+				int handle_size = MIN(128, MIN(attr.width / 4, attr.height / 4));
+
+				if (x < handle_size) {
+					dirx = -1;
+				} else if (x >= attr.width  - handle_size) {
+					dirx = 1;
+				} else {
+					dirx = 0;
+				}
+
+				if (y < handle_size) {
+					diry = -1;
+				} else if (y >= attr.height - handle_size) {
+					diry = 1;
+				} else {
+					diry = 0;
+				}
+
 				if (x+y < 20) {
 					printf("docking widgets should appear\n");
 					cairo_t *cr = latest_cr;
@@ -230,17 +253,18 @@ int main(void)
 					cairo_fill(cr);
 				}
 				start.subwindow = None;
+				dirx = diry = 0;
 				break;
 			case MotionNotify:
 				if (!start.subwindow) continue;
 				int xdiff = ev.xbutton.x_root - start.x_root;
 				int ydiff = ev.xbutton.y_root - start.y_root;
-
+				int center = dirx == 0 && diry == 0;
 				XMoveResizeWindow(dpy, start.subwindow,
-						attr.x + (start.button==1 ? xdiff : 0),
-						attr.y + (start.button==1 ? ydiff : 0),
-						MAX(1, attr.width  + (start.button==3 ? xdiff : 0)),
-						MAX(1, attr.height + (start.button==3 ? ydiff : 0)));
+						attr.x + ((center || dirx == -1) ? xdiff : 0),
+						attr.y + ((center || diry == -1) ? ydiff : 0),
+						MAX(1, attr.width  + xdiff * dirx),
+						MAX(1, attr.height + ydiff * diry));
 				break;
 			case CreateNotify:
 				break; // TODO ?
