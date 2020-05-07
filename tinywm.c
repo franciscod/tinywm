@@ -137,13 +137,14 @@ int main(void)
 		return 3;
 	}
 
-
-	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("F1")), MOD,
-			root, True, GrabModeAsync,
-			GrabModeAsync);
 	XGrabButton(dpy, 1, MOD, root, True,
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None);
+
+	XGrabButton(dpy, 1, 0, root, True,
+			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
+			GrabModeAsync, GrabModeAsync, None, None);
+
 	XGrabButton(dpy, 3, MOD, root, True,
 			ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
 			GrabModeAsync, GrabModeAsync, None, None);
@@ -160,11 +161,11 @@ int main(void)
 		int y;
 		switch (ev.type) {
 			case KeyPress:
-				if (!ev.xkey.subwindow) continue;
-				XRaiseWindow(dpy, ev.xkey.subwindow);
 				break;
 			case ButtonPress:
 				if (!ev.xbutton.subwindow) continue;
+				XRaiseWindow(dpy, ev.xbutton.subwindow);
+				XSetInputFocus(dpy, ev.xbutton.subwindow, RevertToParent, CurrentTime);
 				start = ev.xbutton;
 				XGetWindowAttributes(dpy, ev.xbutton.subwindow, &attr);
 				x = ev.xbutton.x - attr.x;
